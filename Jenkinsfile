@@ -2,7 +2,7 @@ pipeline {
     agent any  // Use any available Jenkins agent
     
     environment {
-        AWS_CREDENTIALS = credentials('aws-access-key') // Ensure correct AWS credentials ID in Jenkins
+        AWS_CREDENTIALS = credentials('aws-access-key') // Use your correct AWS credential ID
         S3_BUCKET = 'mern-frontend-bucket'
         LAMBDA_FUNCTION_NAME = 'mern-backend-function'
         AWS_REGION = 'us-east-1'
@@ -17,33 +17,27 @@ pipeline {
         
         stage('Install Dependencies') {
             steps {
-                sh '''
-                # Remove old node_modules & package-lock.json (prevents corruption)
-                rm -rf frontend/node_modules frontend/package-lock.json
-                rm -rf server/node_modules server/package-lock.json
+                sh 'rm -rf frontend/node_modules frontend/package-lock.json'
+                sh 'rm -rf server/node_modules server/package-lock.json'
 
-                # Install dependencies with retry (avoids npm network failures)
+                // Retry mechanism added
                 retry(3) {
-                    npm install --prefix server
-                    npm install --prefix frontend
+                    sh 'npm install --prefix server'
+                    sh 'npm install --prefix frontend'
                 }
-                '''
             }
         }
 
         stage('Build Frontend') {
             steps {
-                sh '''
-                cd frontend
-                npm rebuild  # Fix issues with native modules
-                npm run build
-                '''
+                sh 'cd frontend && npm rebuild'
+                sh 'cd frontend && npm run build'
             }
         }
         
         stage('Upload Frontend to S3') {
             steps {
-                withAWS(credentials: 'aws-access-key', region: "$AWS_REGION") {
+                withAWS(credentials: 'aws-access-key', region: "$AWS_REGION") { // Updated credential ID
                     sh 'aws s3 sync frontend/dist s3://$S3_BUCKET --delete'
                 }
             }
@@ -51,25 +45,19 @@ pipeline {
 
         stage('Build Server') { 
             steps {
-                sh '''
-                cd server
-                npm run build || echo "No build step defined, skipping..."
-                '''
+                sh 'cd server && npm run build || echo "No build step defined, skipping..."'
             }
         }
 
         stage('Prepare Lambda Package') {
             steps {
-                sh '''
-                cd server
-                zip -r ../server.zip * .env node_modules
-                '''
+                sh 'cd server && zip -r ../server.zip * .env node_modules'
             }
         }
 
         stage('Deploy Lambda') {
             steps {
-                withAWS(credentials: 'aws-access-key', region: "$AWS_REGION") {
+                withAWS(credentials: 'aws-access-key', region: "$AWS_REGION") { // Updated credential ID
                     sh 'aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://server.zip'
                 }
             }
