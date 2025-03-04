@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: 'https://github.com/AnuragRajput-cyber/E-learning-Plateform.git'
+                git branch: 'master', url: 'https://github.com/AnuragRajput-cyber/E-learning-Plateform.git'
             }
         }
         
