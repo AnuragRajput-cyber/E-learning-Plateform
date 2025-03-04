@@ -2,7 +2,7 @@ pipeline {
     agent any  // Use any available Jenkins agent
     
     environment {
-        AWS_CREDENTIALS = credentials('aws-credentials-id') // Single AWS credential stored in Jenkins
+        AWS_CREDENTIALS = credentials('aws-access-key') // Single AWS credential stored in Jenkins
         S3_BUCKET = 'mern-frontend-bucket'
         LAMBDA_FUNCTION_NAME = 'mern-backend-function'
     }
@@ -29,7 +29,7 @@ pipeline {
         
         stage('Upload Frontend to S3') {
             steps {
-                withAWS(credentials: 'aws-credentials-id', region: 'us-east-1') {
+                withAWS(credentials: 'aws-access-key', region: 'us-east-1') {
                     sh 'aws s3 sync frontend/build s3://$S3_BUCKET --delete'
                 }
             }
@@ -52,7 +52,7 @@ pipeline {
 
         stage('Deploy Lambda') {
             steps {
-                withAWS(credentials: 'aws-credentials-id', region: 'us-east-1') {
+                withAWS(credentials: 'aws-access-key', region: 'us-east-1') {
                     sh 'aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://server.zip'
                 }
             }
